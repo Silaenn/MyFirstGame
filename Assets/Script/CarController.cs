@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
@@ -11,19 +10,49 @@ public class CarController : MonoBehaviour
     private float steering = 1.5f;
     private float rotationAngle = 0f;
     public bool isPlayerInCar = false;
-     private float maxSpeed = 15f;
+     private float maxSpeed = 20f;
      private float driftFactor = 0.95f;
     private Rigidbody2D rb;
+
+     private AudioSource honkSource;
+    private AudioSource engineSource;
+    public AudioClip honkClip;
+    public AudioClip engineClip;
 
 
 
     void Start(){
         rb = GetComponent<Rigidbody2D>();
+       AudioSource[] audioSources = GetComponents<AudioSource>();
+       honkSource = audioSources[0];
+       engineSource = audioSources[1];
+       engineSource.loop = true;
+
+
     }
     void Update()
     {
       if (isPlayerInCar){
         MoveCar();
+
+        
+       if (!engineSource.isPlaying && currentSpeed != 0)
+        {
+            engineSource.Play(); 
+        }
+        // Hentikan suara mesin jika kecepatan mobil 0
+        else if (engineSource.isPlaying && currentSpeed == 0)
+        {
+            engineSource.Stop(); 
+        }
+      } else{
+            engineSource.Stop(); 
+
+      }
+
+
+      if(isPlayerInCar && Input.GetKeyDown(KeyCode.H)){
+        PlayHonk();
       }
 
     }
@@ -38,6 +67,8 @@ public class CarController : MonoBehaviour
         currentSpeed -= acceleration * Time.fixedDeltaTime;
       } else {
         currentSpeed = Mathf.MoveTowards(currentSpeed, 0, deceleration * Time.fixedDeltaTime);
+        PlayEngine();
+
       }
 
       currentSpeed = Mathf.Clamp(currentSpeed, -maxSpeed, maxSpeed);
@@ -66,8 +97,21 @@ public class CarController : MonoBehaviour
 
     // Terapkan kecepatan akhir ke Rigidbody2D
     rb.velocity = drift;
-
 }
+
+     void PlayHonk()
+    {
+        honkSource.Stop(); // Hentikan suara jika sedang berjalan
+        honkSource.PlayOneShot(honkClip); 
+    }
+     void PlayEngine()
+    {
+        engineSource.Stop(); // Hentikan suara jika sedang berjalan
+        engineSource.PlayOneShot(engineClip); 
+    }
+
+
+
 
 
 }

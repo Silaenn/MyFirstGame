@@ -13,6 +13,11 @@ public class enemyControllerCar : MonoBehaviour
     public Transform[] waypoints; // Daftar titik yang harus dilalui musuh
     private int currentWaypointIndex = 0;
 
+     public Transform player;
+    public float detectionDistance = 5f;
+    public LayerMask playerLayer;
+    bool isMovingForward = true;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -23,6 +28,7 @@ public class enemyControllerCar : MonoBehaviour
         if (waypoints.Length > 0)
         {
             MoveTowardsWaypoint();
+            DetectPlayer();
         }
     }
 
@@ -42,11 +48,29 @@ public class enemyControllerCar : MonoBehaviour
 
         ApplyMovement();
 
-        // Jika cukup dekat dengan waypoint, pindah ke waypoint berikutnya
         if (Vector2.Distance(transform.position, targetWaypoint.position) < 1f)
+    {
+        // Jika bergerak maju dan sudah di waypoint terakhir, ubah arah menjadi mundur
+        if (isMovingForward && currentWaypointIndex >= waypoints.Length - 1)
         {
-            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+            isMovingForward = false;
         }
+        // Jika bergerak mundur dan sudah di waypoint pertama, ubah arah menjadi maju
+        else if (!isMovingForward && currentWaypointIndex <= 0)
+        {
+            isMovingForward = true;
+        }
+
+        // Ubah currentWaypointIndex sesuai arah
+        if (isMovingForward)
+        {
+            currentWaypointIndex++;
+        }
+        else
+        {
+            currentWaypointIndex--;
+        }
+    }
     }
 
     void ApplyMovement()
@@ -66,4 +90,30 @@ public class enemyControllerCar : MonoBehaviour
         // Terapkan kecepatan akhir ke Rigidbody2D
         rb.velocity = drift;
     }
+
+     void DetectPlayer()
+{
+    // Arah ke player
+    Vector2 directionToPlayer = (player.position - transform.position).normalized;
+    
+    // Arah depan mobil (bisa juga pakai transform.up tergantung orientasi mobil)
+    Vector2 forwardDirection = transform.right;
+
+    // Sudut antara arah depan mobil dan arah ke player
+    float angle = Vector2.Angle(forwardDirection, directionToPlayer);
+
+    // Hanya lakukan raycast jika player berada dalam sudut pandang (misalnya 30 derajat)
+    if (angle < 30f)
+    {
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, directionToPlayer, detectionDistance, playerLayer);
+        
+        if (hit.collider != null && hit.collider.transform == player)
+        {
+            // Hentikan mobil jika mendeteksi player
+            rb.velocity = Vector2.zero;
+            rb.freezeRotation = true;
+        }
+    }
+}
+
 }
